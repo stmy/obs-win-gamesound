@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros">
+    <OBS_RUNDIR_X64>D:\Development\ObsRelated\obs-studio\build64\rundir\Release\</OBS_RUNDIR_X64>
+  </PropertyGroup>
+  <PropertyGroup />
+  <ItemDefinitionGroup />
+  <ItemGroup>
+    <BuildMacro Include="BOOST_INCLUDE">
+      <Value>$(BOOST_INCLUDE)</Value>
+    </BuildMacro>
+    <BuildMacro Include="BOOST_LIB_X86">
+      <Value>$(BOOST_LIB_X86)</Value>
+    </BuildMacro>
+    <BuildMacro Include="BOOST_LIB_X64">
+      <Value>$(BOOST_LIB_X64)</Value>
+    </BuildMacro>
+    <BuildMacro Include="OBS_SRC">
+      <Value>$(OBS_SRC)</Value>
+    </BuildMacro>
+    <BuildMacro Include="LIBOBS_X86_DEBUG">
+      <Value>$(LIBOBS_X86_DEBUG)</Value>
+    </BuildMacro>
+    <BuildMacro Include="LIBOBS_X86_RELEASE">
+      <Value>$(LIBOBS_X86_RELEASE)</Value>
+    </BuildMacro>
+    <BuildMacro Include="LIBOBS_X64_DEBUG">
+      <Value>$(LIBOBS_X64_DEBUG)</Value>
+    </BuildMacro>
+    <BuildMacro Include="LIBOBS_X64_RELEASE">
+      <Value>$(LIBOBS_X64_RELEASE)</Value>
+    </BuildMacro>
+    <BuildMacro Include="OBS_RUNDIR_X86">
+      <Value>$(OBS_RUNDIR_X86)</Value>
+    </BuildMacro>
+    <BuildMacro Include="OBS_RUNDIR_X64">
+      <Value>$(OBS_RUNDIR_X64)</Value>
+    </BuildMacro>
+  </ItemGroup>
+</Project>
