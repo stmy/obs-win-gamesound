@@ -159,7 +159,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
     <MASM Include="winmm-proxy-asm.asm">
       <FileType>Text</FileType>
     </MASM>

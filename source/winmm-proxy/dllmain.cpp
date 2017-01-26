@@ -5,21 +5,21 @@
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved
-					 )
+                     )
 {
     static HMODULE module;
-	switch (ul_reason_for_call)
-	{
-	case DLL_PROCESS_ATTACH:
+    switch (ul_reason_for_call)
+    {
+    case DLL_PROCESS_ATTACH:
         winmm_proxy_init();
         module = LoadLibraryW(L"xaudio2_7-hook.dll");
         break;
-	
-	case DLL_PROCESS_DETACH:
+    
+    case DLL_PROCESS_DETACH:
         FreeLibrary(module);
         winmm_proxy_free();
-		break;
-	}
-	return TRUE;
+        break;
+    }
+    return TRUE;
 }
 

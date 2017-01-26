@@ -7,8 +7,8 @@
 
 namespace ias
 {
-	const int invalid_id = -1;
-	const int max_desc_length = 64;
+    const int invalid_id = -1;
+    const int max_desc_length = 64;
 
     struct audio_sample
     {
@@ -19,7 +19,7 @@ namespace ias
     {
         int id;
         int proc_id;
-		std::string description;
+        std::string description;
     };
 
     class producer
@@ -62,34 +62,34 @@ namespace ias
 
         size_t pop(audio_sample* samples, size_t count);
         void empty();
-		int get_consumer_id();
-		int get_producer_id();
+        int get_consumer_id();
+        int get_producer_id();
 
     private:
         int consumer_id;
         int producer_id;
-		void* shm;
+        void* shm;
         void* queue;
     };
 
-	class registry
-	{
-	public:
-		registry();
-		~registry();
+    class registry
+    {
+    public:
+        registry();
+        ~registry();
 
-		int get_unique_id();
-		int register_producer(std::string description);
-		bool unregister_producer(int id);
-		std::vector<ias::producer_info> get_registered_producers();
+        int get_unique_id();
+        int register_producer(std::string description);
+        bool unregister_producer(int id);
+        std::vector<ias::producer_info> get_registered_producers();
 
-	private:
-		void* shm;
-		void* mutex;
+    private:
+        void* shm;
+        void* mutex;
 
-		void init();
-		void collect_garbages();
-	};
+        void init();
+        void collect_garbages();
+    };
 
 
     std::vector<producer_info> get_registered_producers();

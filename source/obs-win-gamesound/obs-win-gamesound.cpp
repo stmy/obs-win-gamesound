@@ -12,8 +12,8 @@ struct plugin_context
     bool running = true;
     obs_source_t* source = nullptr;
     ias::consumer* consumer = nullptr;
-	std::mutex *mutex = nullptr;
-	std::thread* thread = nullptr;
+    std::mutex *mutex = nullptr;
+    std::thread* thread = nullptr;
 };
 
 const char* get_name(void*)
@@ -28,7 +28,7 @@ const char* get_name(void*)
 
     while (context->running)
     {
-		context->mutex->lock();
+        context->mutex->lock();
 
         if (context->consumer != nullptr)
         {
@@ -45,7 +45,7 @@ const char* get_name(void*)
             obs_source_output_audio(context->source, &data);
         }
 
-		context->mutex->unlock();
+        context->mutex->unlock();
 
         os_sleep_ms(10);
     }
@@ -54,10 +54,10 @@ const char* get_name(void*)
 void* create(obs_data_t *settings, obs_source_t *source)
 {
     auto context = new plugin_context;
-	context->mutex = new std::mutex;
+    context->mutex = new std::mutex;
     context->source = source;
 
-	context->thread = new std::thread(consumer_proc, context);
+    context->thread = new std::thread(consumer_proc, context);
 
     //pthread_create(context->thread, nullptr, consumer_proc, context);
 
@@ -70,9 +70,9 @@ void destroy(void* obj)
     auto context = (plugin_context*)obj;
 
     context->running = false;
-	context->thread->join();
+    context->thread->join();
 
-	delete context->thread;
+    delete context->thread;
     delete context->consumer;
     delete context->mutex;
 }
@@ -82,7 +82,7 @@ void update(void* obj, obs_data_t* settings)
     int target = (int)obs_data_get_int(settings, "target");
     auto context = (plugin_context*)obj;
 
-	context->mutex->lock();
+    context->mutex->lock();
 
     if (context->consumer == nullptr ||
         context->consumer->get_producer_id() != target)
@@ -90,20 +90,20 @@ void update(void* obj, obs_data_t* settings)
         if (context->consumer) delete context->consumer;
         context->consumer = nullptr;
 
-		if (target != -1)
-		{
-			try
-			{
-				context->consumer = new ias::consumer(target);
-			}
-			catch (...)
-			{
-				context->consumer = nullptr;
-			}
-		}
+        if (target != -1)
+        {
+            try
+            {
+                context->consumer = new ias::consumer(target);
+            }
+            catch (...)
+            {
+                context->consumer = nullptr;
+            }
+        }
     }
 
-	context->mutex->unlock();
+    context->mutex->unlock();
 }
 
 void get_defaults(obs_data_t* settings)
@@ -113,16 +113,16 @@ void get_defaults(obs_data_t* settings)
 
 std::string get_executable_name(int pid)
 {
-	HANDLE proc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
-	if (proc == nullptr) { return "???"; }
+    HANDLE proc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+    if (proc == nullptr) { return "???"; }
 
-	char buffer[MAX_PATH];
-	if (!GetProcessImageFileNameA(proc, buffer, MAX_PATH))
-	{
-		return "???";
-	}
+    char buffer[MAX_PATH];
+    if (!GetProcessImageFileNameA(proc, buffer, MAX_PATH))
+    {
+        return "???";
+    }
 
-	return std::string(buffer);
+    return std::string(buffer);
 }
 
 obs_properties_t* get_properties(void*)
@@ -135,11 +135,11 @@ obs_properties_t* get_properties(void*)
 
     for (auto info : ias::get_registered_producers())
     {
-		std::string exe = get_executable_name(info.proc_id);
-		std::string label = 
-			"[" + std::to_string(info.id) + "] " + std::to_string(info.proc_id) + ": " + exe;
+        std::string exe = get_executable_name(info.proc_id);
+        std::string label = 
+            "[" + std::to_string(info.id) + "] " + std::to_string(info.proc_id) + ": " + exe;
         obs_property_list_add_int(target_prop,
-			label.c_str(),
+            label.c_str(),
             info.id);
     }
 
