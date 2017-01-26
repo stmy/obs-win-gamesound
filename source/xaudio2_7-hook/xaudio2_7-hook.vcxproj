@@ -89,11 +89,13 @@
     <LibraryPath>$(BOOST_LIB_X86);$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)build\$(PlatformTarget)\$(Configuration)\</OutDir>
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(DXSDK_DIR)Include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LibraryPath>$(BOOST_LIB_X64);$(DXSDK_DIR)Lib\x64;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)build\$(PlatformTarget)\$(Configuration)\</OutDir>
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(DXSDK_DIR)Include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
