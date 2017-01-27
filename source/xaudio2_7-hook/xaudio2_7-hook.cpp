@@ -67,12 +67,18 @@ HRESULT __fastcall CreateMasteringVoice_Hook(IXAudio2* _this, IXAudio2MasteringV
     XAUDIO2_EFFECT_DESCRIPTOR* descriptors = (XAUDIO2_EFFECT_DESCRIPTOR*)malloc(memsize);
     memcpy(descriptors, pEffectChain->pEffectDescriptors, memsize - sizeof(XAUDIO2_EFFECT_DESCRIPTOR));
 
+    UINT32 channels = InputChannels;
+    if (pEffectChain->EffectCount > 0)
+    {
+        channels = pEffectChain->pEffectDescriptors[pEffectChain->EffectCount - 1].OutputChannels;
+    }
+
     // Append capturing effect into effect chain
     XAUDIO2_EFFECT_CHAIN* effect_chain = const_cast<XAUDIO2_EFFECT_CHAIN*>(pEffectChain);
     effect_chain->EffectCount += 1;
     effect_chain->pEffectDescriptors = descriptors;
     effect_chain->pEffectDescriptors[effect_chain->EffectCount - 1].InitialState = TRUE;
-    effect_chain->pEffectDescriptors[effect_chain->EffectCount - 1].OutputChannels = 6;
+    effect_chain->pEffectDescriptors[effect_chain->EffectCount - 1].OutputChannels = channels;
     effect_chain->pEffectDescriptors[effect_chain->EffectCount - 1].pEffect = static_cast<IXAPO*>(capfx);
 
     HRESULT result = fnCreateMasteringVoice(_this, ppMasteringVoice, InputChannels, InputSampleRate, Flags, DeviceIndex, pEffectChain);

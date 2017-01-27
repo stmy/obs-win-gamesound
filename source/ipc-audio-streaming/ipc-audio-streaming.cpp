@@ -20,7 +20,8 @@ namespace bpt = boost::posix_time;
 namespace ias
 {
     const std::size_t stream_buffer_samples = 2048;
-    const std::size_t stream_buffer_size = sizeof(ias::audio_sample) * stream_buffer_samples + 1024;
+    const std::size_t stream_buffer_size = 4 * 8 * stream_buffer_samples;
+    const std::size_t stream_shmem_size = 4 * 8 * stream_buffer_samples + 1024;
     const std::size_t request_buffer_size = 1024;
     const std::size_t registry_size = 65536;
     const char*       stream_shm_prefix = "{82B4CD66-ABF7-45BD-9272-3C188424843B}ipc-audio-consumer-";
@@ -38,7 +39,7 @@ namespace ias
     typedef bip::allocator<shm_producer_info, bip::managed_shared_memory::segment_manager> producer_info_allocator;
     typedef bip::vector<shm_producer_info, producer_info_allocator> producer_info_vector;
 
-    typedef blf::spsc_queue<audio_sample, blf::capacity<stream_buffer_samples>> ring_buffer;
+    typedef blf::spsc_queue<uint8_t, blf::capacity<stream_buffer_size>> ring_buffer;
 }
 
 
@@ -235,7 +236,7 @@ ias::producer::~producer()
     request_proc_thread.join();
 }
 
-void ias::producer::push(audio_sample* samples, size_t count)
+void ias::producer::write(const audio_sample_info& audio_info, void* samples, size_t num_bytes)
 {
     bool remove_required = false;
 
@@ -243,10 +244,11 @@ void ias::producer::push(audio_sample* samples, size_t count)
     {
         try
         {
-            size_t num_pushed = ((ring_buffer*)info.queue)->push(samples, count);
-
-            if (num_pushed > 0)
+            if (((ring_buffer*)info.queue)->write_available() >= sizeof(audio_sample_info) + num_bytes)
             {
+                ((ring_buffer*)info.queue)->push((uint8_t*)&audio_info, sizeof(audio_sample_info));
+                ((ring_buffer*)info.queue)->push((uint8_t*)samples, num_bytes);
+
                 info.last_consumed = (bpt::microsec_clock::universal_time() - epoch).total_milliseconds();
             }
             else
@@ -395,7 +397,7 @@ ias::consumer::consumer(int producer_id)
     // Create shared memory for streaming
     consumer_id = reg.get_unique_id();
     std::string shm_name = stream_shm_prefix + std::to_string(consumer_id);
-    shm = new bip::managed_shared_memory(bip::open_or_create, shm_name.c_str(), stream_buffer_size);
+    shm = new bip::managed_shared_memory(bip::open_or_create, shm_name.c_str(), stream_shmem_size);
     queue = ((bip::managed_shared_memory*)shm)->find_or_construct<ring_buffer>("queue")();
 
     // Submit request
@@ -418,10 +420,39 @@ ias::consumer::~consumer()
     bip::shared_memory_object::remove(shm_name.c_str());
 }
 
-size_t ias::consumer::pop(audio_sample* samples, size_t count)
+size_t ias::consumer::read(audio_sample_info* info, void* buffer, size_t buflen, size_t* bytes_unread)
 {
     ring_buffer* q = (ring_buffer*)queue;
-    return q->pop(samples, count);
+
+    if (this->bytes_unread == 0)
+    {
+        // Receive audio info
+        size_t bytes_read_info = q->pop((uint8_t*)&current_info, sizeof(audio_sample_info));
+        if (bytes_read_info == sizeof(audio_sample_info))
+        {
+            this->bytes_unread = current_info.channels * current_info.samples * current_info.bits_per_sample / 8;
+        }
+        else
+        {
+            return 0; // Next data is not available yet
+        }
+    }
+
+    *info = current_info; // Copy current audio info
+
+    // Receive audio buffer
+    size_t bytes_to_read = min(this->bytes_unread, buflen);
+    size_t bytes_read = q->pop((uint8_t*)buffer, bytes_to_read);
+    this->bytes_unread -= bytes_read;
+    *bytes_unread = this->bytes_unread;
+
+    return bytes_read;
+}
+
+bool ias::consumer::is_empty()
+{
+    ring_buffer* q = (ring_buffer*)queue;
+    return q->read_available() == 0;
 }
 
 void ias::consumer::empty()

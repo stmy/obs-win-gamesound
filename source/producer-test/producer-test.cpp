@@ -80,7 +80,9 @@ int main()
         ias::audio_sample sample_buf[512];
         while (!exit)
         {
-            while (consumer.pop(sample_buf, 512) > 0);
+            ias::audio_sample_info info;
+            size_t unread;
+            while (consumer.read(&info, sample_buf, sizeof(sample_buf), &unread) > 0);
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     });

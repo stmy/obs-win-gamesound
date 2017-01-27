@@ -15,6 +15,27 @@ namespace ias
         float data[8];
     };
 
+    enum audio_format : int
+    {
+        format_float16,
+        format_float32,
+        format_int8,
+        format_int16,
+        format_int32,
+        format_uint8,
+        format_uint16,
+        format_uint32
+    };
+
+    struct audio_sample_info
+    {
+        int samples;
+        int channels;
+        int rate;
+        int bits_per_sample;
+        audio_format format;
+    };
+
     struct producer_info
     {
         int id;
@@ -28,7 +49,7 @@ namespace ias
         producer(std::string description);
         ~producer();
 
-        void push(audio_sample* samples, size_t count);
+        void write(const audio_sample_info& info, void* samples, size_t num_bytes);
         int get_id();
 
     private:
@@ -60,7 +81,8 @@ namespace ias
         consumer(int producer_id);
         ~consumer();
 
-        size_t pop(audio_sample* samples, size_t count);
+        size_t read(audio_sample_info* info, void* buffer, size_t buflen, size_t* bytes_unread);
+        bool is_empty();
         void empty();
         int get_consumer_id();
         int get_producer_id();
@@ -68,6 +90,8 @@ namespace ias
     private:
         int consumer_id;
         int producer_id;
+        audio_sample_info current_info;
+        size_t bytes_unread;
         void* shm;
         void* queue;
     };

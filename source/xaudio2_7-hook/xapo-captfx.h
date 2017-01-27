@@ -102,26 +102,14 @@ private:
 
     void DoProcess(FLOAT32* __restrict pData, UINT32 cFrames, UINT32 cChannels)
     {
-        static ias::audio_sample buffer[512];
-        UINT32 frame = 0;
-        FLOAT32* pointer = pData;
+        ias::audio_sample_info info;
+        info.bits_per_sample = wave_format.wBitsPerSample;
+        info.channels = cChannels;
+        info.samples = cFrames;
+        info.rate = wave_format.nSamplesPerSec;
+        info.format = ias::audio_format::format_float32;
 
-        ZeroMemory(buffer, sizeof(buffer));
-
-        while (frame < cFrames)
-        {
-            UINT32 i;
-            for (i = 0; frame < cFrames; i++, frame++)
-            {
-                for (UINT32 c = 0; c < cChannels; c++)
-                {
-                    buffer[i].data[c] = *pointer;
-                    pointer++;
-                }
-            }
-
-            producer.push(buffer, i);
-        }
+        producer.write(info, pData, cFrames * cChannels * sizeof(FLOAT32));
     }
 };
 

@@ -6,25 +6,29 @@
 #include <thread>
 #include <mutex>
 #include "../ipc-audio-streaming/ipc-audio-streaming.h"
+#include "obs-win-gamesound.h"
 
-struct plugin_context
-{
-    bool running = true;
-    obs_source_t* source = nullptr;
-    ias::consumer* consumer = nullptr;
-    std::mutex *mutex = nullptr;
-    std::thread* thread = nullptr;
-};
 
 const char* get_name(void*)
 {
     return obs_module_text("Game Sound Capture");
 }
 
- void consumer_proc(void* obj)
+speaker_layout get_speaker_layout(const ias::audio_sample_info& info)
+{
+    switch (info.channels)
+    {
+    case 1: return speaker_layout::SPEAKERS_MONO;
+    case 2: return speaker_layout::SPEAKERS_STEREO;
+    case 6: return speaker_layout::SPEAKERS_5POINT1_SURROUND;
+    case 8: return speaker_layout::SPEAKERS_7POINT1_SURROUND;
+    default: return speaker_layout::SPEAKERS_UNKNOWN;
+    }
+}
+
+void consumer_proc(void* obj)
 {
     auto context = (plugin_context*)obj;
-    ias::audio_sample buffer[1024];
 
     while (context->running)
     {
@@ -32,17 +36,47 @@ const char* get_name(void*)
 
         if (context->consumer != nullptr)
         {
-            size_t frames = context->consumer->pop(buffer, 1024);
+            while (!context->consumer->is_empty())
+            {
+                // Read single packet
+                ias::audio_sample_info info;
+                size_t bytes_read = 0;
+                size_t bytes_unread = 0;
+                do
+                {
+                    bytes_read += context->consumer->read(
+                        &info, 
+                        (void*)((uintptr_t)context->buffer + bytes_read), 
+                        context->buflen, &bytes_unread);
 
-            obs_source_audio data = {};
-            data.data[0] = (const uint8_t*)buffer;
-            data.frames = (uint32_t)frames;
-            data.speakers = SPEAKERS_7POINT1_SURROUND;
-            data.samples_per_sec = 44100;
-            data.format = AUDIO_FORMAT_FLOAT;
-            data.timestamp = os_gettime_ns();
+                    // Extend the buffer if is not enough length for this stream
+                    if (bytes_unread > 0)
+                    {
+                        void* new_buffer = realloc(context->buffer, context->buflen + bytes_unread);
+                        if (new_buffer == nullptr)
+                        {
+                            throw "Out of memory!!!";
+                        }
+                        context->buffer = new_buffer;
+                    }
+                    
+                } while (bytes_unread > 0);
 
-            obs_source_output_audio(context->source, &data);
+                // Output sound
+                speaker_layout layout = get_speaker_layout(info);
+                if (layout != SPEAKERS_UNKNOWN)
+                {
+                    obs_source_audio data = {};
+                    data.data[0] = (const uint8_t*)context->buffer;
+                    data.frames = (uint32_t)info.samples;
+                    data.speakers = layout;
+                    data.samples_per_sec = info.rate;
+                    data.format = AUDIO_FORMAT_FLOAT;
+                    data.timestamp = os_gettime_ns();
+
+                    obs_source_output_audio(context->source, &data);
+                }
+            }
         }
 
         context->mutex->unlock();
@@ -56,10 +90,12 @@ void* create(obs_data_t *settings, obs_source_t *source)
     auto context = new plugin_context;
     context->mutex = new std::mutex;
     context->source = source;
-
+    context->buflen = 441 * 8 * 4;
+    context->buffer = malloc(context->buflen);
+    context->running = true;
     context->thread = new std::thread(consumer_proc, context);
 
-    //pthread_create(context->thread, nullptr, consumer_proc, context);
+    update(context, settings);
 
     return context;
 }
@@ -71,6 +107,8 @@ void destroy(void* obj)
 
     context->running = false;
     context->thread->join();
+    
+    free(context->buffer);
 
     delete context->thread;
     delete context->consumer;
