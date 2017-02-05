@@ -1,3 +1,5 @@
+**[New WASAPI application capturing plugin is available here!](https://github.com/stmy/win-wasapi-capture)**
+
 # obs-win-gamesound
 
 Plugin for OBS-Studio to capture sound of game application.
